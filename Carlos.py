@@ -211,13 +211,15 @@ st.markdown(f"""
 def load_and_clean_data():
     """
     Carga y preprocesa los datos de vuelos con manejo robusto de errores.
+    Incluye preprocesamiento del notebook: limpieza de códigos de aeropuerto,
+    manejo de valores nulos y formateo de tiempos.
     
     Returns:
         tuple: (flights_df, flights_geo_df, airlines_df) o (None, None, None) si hay error
     """
     try:
         # Carga de archivos
-        flights = pd.read_csv('flights_reducido.csv')
+        flights = pd.read_csv('flights.csv')
         airlines = pd.read_csv('airlines.csv')
         airports = pd.read_csv('airports.csv')
         
@@ -228,18 +230,53 @@ def load_and_clean_data():
         st.error(f"❌ **Error inesperado:** {str(e)}")
         return None, None, None
 
-    # Procesamiento de fechas
+    # ========== PREPROCESAMIENTO DEL NOTEBOOK ==========
+    
+    # 1. CREAR COLUMNA DE FECHA
     flights['DATE'] = pd.to_datetime(flights[['YEAR', 'MONTH', 'DAY']])
     flights['DAY_NAME'] = flights['DATE'].dt.day_name()
     flights['MONTH_NAME'] = flights['DATE'].dt.strftime('%B')
+    
+    # 2. FUNCIÓN PARA CONVERTIR FORMATO HHMM A CADENA HH:MM
+    def format_time(x):
+        if pd.isnull(x):
+            return np.nan
+        if x == 2400:  # Manejar caso borde de medianoche
+            return '00:00'
+        x = int(x)
+        return f"{x // 100:02d}:{x % 100:02d}"
+    
+    # Aplicar a columnas de tiempo clave
+    time_cols = ['SCHEDULED_DEPARTURE', 'DEPARTURE_TIME', 'SCHEDULED_ARRIVAL', 'ARRIVAL_TIME']
+    for col in time_cols:
+        if col in flights.columns:
+            flights[col + '_FORMATTED'] = flights[col].apply(format_time)
+    
+    # 3. MANEJO DE VALORES NULOS
+    # Rellenar causas de retraso con 0 (asumimos que si es nulo, no hubo ese tipo de retraso)
+    delay_cols = ['AIR_SYSTEM_DELAY', 'SECURITY_DELAY', 'AIRLINE_DELAY', 'LATE_AIRCRAFT_DELAY', 'WEATHER_DELAY']
+    for col in delay_cols:
+        if col in flights.columns:
+            flights[col] = flights[col].fillna(0)
+    
+    # 4. LIMPIEZA DE CÓDIGOS DE AEROPUERTO (Eliminar numéricos si no se pueden mapear)
+    # Mantenemos solo los que tienen longitud 3 (IATA codes)
+    flights = flights[flights['ORIGIN_AIRPORT'].apply(lambda x: len(str(x)) == 3)]
+    flights = flights[flights['DESTINATION_AIRPORT'].apply(lambda x: len(str(x)) == 3)]
+    
+    # ========== PROCESAMIENTO ADICIONAL ==========
     
     # Ordenamiento de días
     day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     flights['DAY_NAME'] = pd.Categorical(flights['DAY_NAME'], categories=day_order, ordered=True)
 
-    # Merge con aerolíneas
+    # 5. MERGE CON AEROLÍNEAS
     flights = flights.merge(airlines, left_on='AIRLINE', right_on='IATA_CODE', how='left')
-    flights.rename(columns={'AIRLINE_y': 'AIRLINE_NAME'}, inplace=True)
+    # Renombrar columna para evitar duplicados
+    flights = flights.rename(columns={'AIRLINE_y': 'AIRLINE_NAME', 'AIRLINE_x': 'AIRLINE_CODE'})
+    # Eliminar columna duplicada
+    if 'IATA_CODE' in flights.columns:
+        flights = flights.drop('IATA_CODE', axis=1)
 
     # Mapeo de causas de cancelación
     cancellation_map = {
@@ -250,8 +287,8 @@ def load_and_clean_data():
     }
     flights['CANCELLATION_DESC'] = flights['CANCELLATION_REASON'].map(cancellation_map).fillna('No Cancelado')
 
-    # Datos geográficos
-    flights_geo = flights[flights['ORIGIN_AIRPORT'].astype(str).str.len() == 3].copy()
+    # Datos geográficos (ya filtrados por códigos de 3 caracteres)
+    flights_geo = flights.copy()
     flights_geo = flights_geo.merge(
         airports, 
         left_on='ORIGIN_AIRPORT', 
@@ -575,13 +612,17 @@ with tab1:
     
     fig_days.update_layout(
         yaxis=dict(
-            title='Número de Vuelos',
-            titlefont=dict(color=ColorScheme.ACCENT),
+            title=dict(
+                text='Número de Vuelos',
+                font=dict(color=ColorScheme.ACCENT)
+            ),
             tickfont=dict(color=ColorScheme.ACCENT)
         ),
         yaxis2=dict(
-            title='Retraso Promedio (minutos)',
-            titlefont=dict(color=ColorScheme.DANGER),
+            title=dict(
+                text='Retraso Promedio (minutos)',
+                font=dict(color=ColorScheme.DANGER)
+            ),
             tickfont=dict(color=ColorScheme.DANGER),
             overlaying='y',
             side='right'
