@@ -540,7 +540,7 @@ with tab1:
             plot_bgcolor='white',
             paper_bgcolor='white'
         )
-        st.plotly_chart(fig_trend, use_container_width=True)
+        st.plotly_chart(fig_trend, width="stretch")
     
     with col_right:
         st.markdown("#### 🎯 Distribución por Estado de Retraso")
@@ -579,7 +579,7 @@ with tab1:
             template='plotly_white',
             font=dict(family="Inter, sans-serif", size=12, color=ColorScheme.SECONDARY)
         )
-        st.plotly_chart(fig_bar_delay, use_container_width=True)
+        st.plotly_chart(fig_bar_delay, width="stretch")
     
     # Comparativa Día de la Semana
     st.markdown("#### 📅 Rendimiento por Día de la Semana")
@@ -642,7 +642,7 @@ with tab1:
         paper_bgcolor='white'
     )
     
-    st.plotly_chart(fig_days, use_container_width=True)
+    st.plotly_chart(fig_days, width="stretch")
 
 # =============================================================================
 # TAB 2: ANÁLISIS TEMPORAL
@@ -671,7 +671,7 @@ with tab2:
         height=500,
         font=dict(family="Inter, sans-serif", size=12, color=ColorScheme.SECONDARY)
     )
-    st.plotly_chart(fig_heat, use_container_width=True)
+    st.plotly_chart(fig_heat, width="stretch")
     
     # Análisis por hora
     if 'SCHEDULED_DEPARTURE' in df_filtered.columns:
@@ -700,7 +700,7 @@ with tab2:
             template='plotly_white',
             font=dict(family="Inter, sans-serif", size=12, color=ColorScheme.SECONDARY)
         )
-        st.plotly_chart(fig_hour, use_container_width=True)
+        st.plotly_chart(fig_hour, width="stretch")
 
 # =============================================================================
 # TAB 3: RANKING AEROLÍNEAS
@@ -743,7 +743,7 @@ with tab3:
     )
     # Forzar orden para que el menor retraso aparezca arriba
     fig_perf.update_yaxes(categoryorder='array', categoryarray=list(perf['Aerolínea'][::-1]))
-    st.plotly_chart(fig_perf, use_container_width=True)
+    st.plotly_chart(fig_perf, width="stretch")
     
     st.info("💡 **Interpretación:** Las aerolíneas en la esquina inferior izquierda tienen mejor rendimiento (menos retrasos y cancelaciones)")
     
@@ -781,7 +781,7 @@ with tab3:
         })
         fig_top.update_traces(texttemplate='%{text:.1f} min', textposition='outside', marker_line_color='rgba(0,0,0,0.06)')
         fig_top.update_layout(height=320, margin=dict(l=0, r=10, t=8, b=8), xaxis_title='Retraso Promedio (min)', yaxis_title='')
-        st.plotly_chart(fig_top, use_container_width=True)
+        st.plotly_chart(fig_top, width="stretch")
         
     with col2:
         st.markdown("##### 🔴 Top 5 - Mayor Retraso")
@@ -812,13 +812,13 @@ with tab3:
         })
         fig_worst.update_traces(texttemplate='%{text:.1f} min', textposition='inside', textfont=dict(color='white'), marker_line_color='rgba(0,0,0,0.06)')
         fig_worst.update_layout(height=320, margin=dict(l=0, r=10, t=8, b=8), xaxis_title='Retraso Promedio (min)', yaxis_title='')
-        st.plotly_chart(fig_worst, use_container_width=True)
+        st.plotly_chart(fig_worst, width="stretch")
 
     # Expander con matriz completa
     with st.expander("Ver Matriz Completa de Rendimiento"):
         st.dataframe(
             airline_metrics.sort_values('Retraso Promedio').style.background_gradient(subset=['Retraso Promedio'], cmap='Blues'),
-            use_container_width=True
+            width="stretch"
         )
 
 # =============================================================================
@@ -852,11 +852,11 @@ with tab4:
             mapbox_style="carto-positron"
         )
         fig_map.update_layout(height=650, margin=dict(l=0, r=0, t=0, b=0), coloraxis_colorbar=dict(title="Retraso (min)"))
-        st.plotly_chart(fig_map, use_container_width=True)
+        st.plotly_chart(fig_map, width="stretch")
 
         st.markdown("#### 🏢 Top 10 Aeropuertos por Volumen")
         top_airports = map_data.nlargest(10, 'Vuelos')[['Aeropuerto', 'Ciudad', 'Vuelos', 'Retraso Promedio']]
-        st.dataframe(top_airports.style.format({'Vuelos': '{:,}', 'Retraso Promedio': '{:.1f}'}), use_container_width=True)
+        st.dataframe(top_airports.style.format({'Vuelos': '{:,}', 'Retraso Promedio': '{:.1f}'}), width="stretch")
     else:
         st.warning("⚠️ No hay datos geográficos disponibles para la selección actual")
 
@@ -890,7 +890,7 @@ with tab5:
             )
             fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
             fig.update_layout(height=420, showlegend=False, margin=dict(l=0, r=0, t=10, b=10))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         else:
             st.success("✅ No hay cancelaciones en el período seleccionado")
 
@@ -903,7 +903,7 @@ with tab5:
                 color_discrete_sequence=[ColorScheme.ACCENT]
             )
             fig.update_layout(height=420, xaxis_title="Distancia (millas)", yaxis_title="Frecuencia", template='plotly_white')
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         else:
             st.info("No hay columna 'DISTANCE' en el dataset.")
 
@@ -922,12 +922,12 @@ with tab5:
                 color_continuous_scale=["#1D23D2", "#4EADF0", "#24ECC7"]
             )
             fig.update_layout(height=600, showlegend=False, template='plotly_white')
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         else:
             st.info("No están disponibles las columnas de origen/destino para el análisis de rutas.")
 
     with st.expander("📋 Ver Datos Crudos (Primeras 100 filas)"):
-        st.dataframe(df_filtered.head(100), use_container_width=True)
+        st.dataframe(df_filtered.head(100), width="stretch")
 
 # =============================================================================
 # FOOTER
